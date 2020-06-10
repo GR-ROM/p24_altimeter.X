@@ -10,9 +10,9 @@ CND_CONF=XC16_24FJ256GB106
 CND_DISTDIR=dist
 TMPDIR=build/${CND_CONF}/${IMAGE_TYPE}/tmp-packaging
 TMPDIRNAME=tmp-packaging
-OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/pic24_usb_bmp085.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-OUTPUT_BASENAME=pic24_usb_bmp085.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-PACKAGE_TOP_DIR=pic24usbbmp085.x/
+OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/p24_altimeter.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+OUTPUT_BASENAME=p24_altimeter.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+PACKAGE_TOP_DIR=p24altimeter.x/
 
 # Functions
 function checkReturnCode
@@ -57,15 +57,15 @@ mkdir -p ${TMPDIR}
 
 # Copy files and create directories and links
 cd "${TOP}"
-makeDirectory ${TMPDIR}/pic24usbbmp085.x/bin
+makeDirectory ${TMPDIR}/p24altimeter.x/bin
 copyFileToTmpDir "${OUTPUT_PATH}" "${TMPDIR}/${PACKAGE_TOP_DIR}bin/${OUTPUT_BASENAME}" 0755
 
 
 # Generate tar file
 cd "${TOP}"
-rm -f ${CND_DISTDIR}/${CND_CONF}/package/pic24usbbmp085.x.tar
+rm -f ${CND_DISTDIR}/${CND_CONF}/package/p24altimeter.x.tar
 cd ${TMPDIR}
-tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/pic24usbbmp085.x.tar *
+tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/p24altimeter.x.tar *
 checkReturnCode
 
 # Cleanup
