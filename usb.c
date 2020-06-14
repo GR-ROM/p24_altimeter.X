@@ -5,28 +5,24 @@
 static volatile BD_endpoint_t bdt[16]  __attribute__ ((aligned (512)));
 static volatile ep_buffer_t bd_buf[4];
 
-uint8_t state;
-uint8_t ctl_stage;
-uint8_t control_needs_zlp;
-uint8_t dev_addr;
-uint8_t status;
+volatile uint8_t state;
+volatile uint8_t ctl_stage;
+volatile uint8_t control_needs_zlp;
+volatile uint8_t dev_addr;
+volatile uint8_t status;
 
-extern uint8_t cdc_state;
+extern volatile uint8_t cdc_state;
 
 uint8_t current_cnf;
 uint8_t alt_if;
 
-static uint16_t wcount;
-static char* ubuf;
+static volatile uint16_t wcount;
+static volatile char* ubuf;
 
-static void setup_stage();
-static void data_in_stage();
-static void data_out_stage();
-static void wait_for_setup_stage();
-
-uint16_t usb_get_state() {
-    return state;
-}
+static volatile void setup_stage();
+static volatile void data_in_stage();
+static volatile void data_out_stage();
+static volatile void wait_for_setup_stage();
 
 void ep0_stall() {
     bdt[0].in.STAT.BSTALL = 1;
@@ -36,25 +32,25 @@ void ep0_stall() {
     U1EP0bits.EPSTALL=1;
 }
 
-void usb_disengage_in_ep(uint16_t ep) {
+void volatile usb_disengage_in_ep(uint16_t ep) {
     bdt[ep].in.STAT.UOWN = 0;
 }
 
-void usb_disengage_out_ep(uint16_t ep) {
+void volatile usb_disengage_out_ep(uint16_t ep) {
     bdt[ep].out.STAT.UOWN = 0;
 }
 
-void usb_in_status(uint16_t ep) {
+void volatile usb_in_status(uint16_t ep) {
     bdt[ep].in.STAT.Val= 0x00;
     bdt[ep].in.STAT.Val |= _USIE | _DTSEN | _DAT1;
 }
 
-void usb_out_status(uint16_t ep) {
+void volatile usb_out_status(uint16_t ep) {
     bdt[ep].out.STAT.Val= 0x00;
     bdt[ep].out.STAT.Val |= _USIE | _DTSEN | _DAT1;
 }
 
-void usb_packet_tx(uint16_t ep, uint8_t* buf, uint16_t count) {
+void volatile usb_packet_tx(uint16_t ep, uint8_t* buf, uint16_t count) {
     memcpy(bdt[ep].in.ADR, buf, count);    
     bdt[ep].in.STAT.BC  = count & 0x3FF;
     bdt[ep].in.STAT.Val &= _DTSMASK;
@@ -62,26 +58,26 @@ void usb_packet_tx(uint16_t ep, uint8_t* buf, uint16_t count) {
     bdt[ep].in.STAT.Val |= _USIE | _DTSEN;
 }
 
-void usb_packet_rx(uint16_t ep, uint16_t count) {    
+void volatile usb_packet_rx(uint16_t ep, uint16_t count) {    
     bdt[ep].out.STAT.BC = count & 0x3FF;
     bdt[ep].out.STAT.Val &= _DTSMASK;
     bdt[ep].out.STAT.DTS = ~bdt[ep].out.STAT.DTS;
     bdt[ep].out.STAT.Val |= _USIE | _DTSEN;
 }
 
-void usb_configure_in_endpoint(uint16_t ep, uint16_t count, char* buf) {
+void volatile usb_configure_in_endpoint(uint16_t ep, uint16_t count, char* buf) {
     bdt[ep].in.STAT.Val = 0x00;
     bdt[ep].in.STAT.BC = count & 0x3FF;
     bdt[ep].in.ADR = buf;
 }
 
-void usb_configure_out_endpoint(uint16_t ep, uint16_t count, char* buf) {
+void volatile usb_configure_out_endpoint(uint16_t ep, uint16_t count, char* buf) {
     bdt[ep].out.STAT.Val = 0x00;
     bdt[ep].out.STAT.BC = count & 0x3FF;
     bdt[ep].out.ADR = buf;
 }
 
-void usb_reset() {
+void volatile usb_reset() {
     memset(&bdt, 0x00, sizeof (bdt));
     memset(&bd_buf, 0x00, sizeof (bd_buf));
 
@@ -120,9 +116,12 @@ void usb_reset() {
     U1OTGCONbits.DPPULUP = 1;
 }
 
-void init_usb() {
+void volatile init_usb() {
     U1ADDR = 0;
     dev_addr = 0;
+    IPC21bits.USB1IP=1;
+    IFS5bits.USB1IF=0;
+    IEC5bits.USB1IE=1;
     usb_reset();
 }
 
@@ -146,7 +145,7 @@ void ctl_ack() {
     usb_in_status(0);
 }
 
-void cdc_init_endpoints(){
+void volatile cdc_init_endpoints(){
     usb_configure_in_endpoint(1, EP1_BUFF_SIZE, &bd_buf[1].in_buffer[0]);
     usb_configure_out_endpoint(1, EP1_BUFF_SIZE, &bd_buf[1].out_buffer[0]);
     usb_configure_in_endpoint(2, EP2_BUFF_SIZE, &bd_buf[2].in_buffer[0]);
@@ -167,7 +166,7 @@ void cdc_init_endpoints(){
     cdc_state=CDC_READY;
 }
 
-static void process_standart_request(USB_SETUP_t* usb_setup) {
+static volatile void process_standart_request(USB_SETUP_t* usb_setup) {
     uint16_t len = 0;
     uint16_t request = (usb_setup->bRequest | (usb_setup->bmRequestType << 8));
     switch (request) {
@@ -264,7 +263,7 @@ static void process_standart_request(USB_SETUP_t* usb_setup) {
     }
 }
 
-static void setup_stage(USB_SETUP_t* usb_setup) {
+static volatile void setup_stage(USB_SETUP_t* usb_setup) {
     ctl_stage = SETUP;
     usb_disengage_out_ep(0);
     usb_disengage_in_ep(0);
@@ -281,7 +280,7 @@ static void setup_stage(USB_SETUP_t* usb_setup) {
     }
 }
 
-static void data_in_stage() {
+static volatile void data_in_stage() {
     uint16_t tx_len = MIN(wcount, EP0_BUFF_SIZE);
     if (wcount > 0) {
         usb_packet_tx(0, ubuf, tx_len);    
@@ -298,7 +297,7 @@ static void data_in_stage() {
     }    
 }
 
-static void data_out_stage() {
+static volatile void data_out_stage() {
     uint16_t rx_len = bdt[0].out.STAT.BC;
     if (rx_len > 0) memcpy(ubuf, bdt[0].out.ADR, rx_len);
     ubuf += rx_len;
@@ -311,7 +310,7 @@ static void data_out_stage() {
     }
 }
 
-static void wait_for_setup_stage() {
+static volatile void wait_for_setup_stage() {
     ctl_stage = WAIT_SETUP;
     U1CONbits.PKTDIS = 0;
     control_needs_zlp = 0;
@@ -320,14 +319,14 @@ static void wait_for_setup_stage() {
     usb_packet_rx(0, EP0_BUFF_SIZE);
 }
 
-static void UnSuspend(void) {
+static volatile void UnSuspend(void) {
 
 }
 
-static void Suspend(void) {
+static volatile void Suspend(void) {
 }
 
-void poll_usb() {
+void volatile poll_usb() {
     uint8_t ep;
     uint8_t pid;
     if (U1IRbits.URSTIF) {

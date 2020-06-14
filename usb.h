@@ -383,7 +383,6 @@ typedef struct ep_data_pp_buffer {
 
     void init_usb();
     void usb_poll();
-    uint16_t usb_get_state();
     void ctl_send(char* data, uint16_t len);
     void ctl_recv(char* data, uint16_t len);
     void ctl_ack();

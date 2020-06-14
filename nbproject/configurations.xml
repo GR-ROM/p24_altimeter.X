@@ -71,7 +71,7 @@
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="PIC24F-GA-GB_DFP" vendor="Microchip" version="1.0.67"/>
+        <pack name="PIC24F-GA-GB_DFP" vendor="Microchip" version="1.2.101"/>
       </packs>
       <compileType>
         <linkerTool>

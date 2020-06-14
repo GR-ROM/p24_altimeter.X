@@ -57,6 +57,7 @@
 #include "i2c.h"
 #include "bmp085.h"
 #include "pcf8531.h"
+#include "p24FJ256GB106.h"
 #define dprintf printf
 /******************************************************************************/
 /* Global Variable Declaration                                                */
@@ -68,29 +69,32 @@
 /* Main Program                                                               */
 /******************************************************************************/
 
-int write(int handle, void *buffer, unsigned int len){
-    send_cdc_buf(buffer, len);
+void __attribute__((interrupt,auto_psv)) _USB1Interrupt(){
+    poll_usb();
+}
+
+int volatile write(int handle, void *buffer, unsigned int len){
+    send_cdc_buf(buffer, len); 
     return (len);
 }
 
 int16_t main(void){
+    uint16_t t=0;
     bmp085_cal_t cal;
-    /* Configure the oscillator for the device */
-    dprintf("starting...\r\n");
-    CLOCK_Initialize();
-    dprintf("clock initialized\r\n");
     AD1PCFGL = 0x00;
     AD1PCFGH = 0x00;
-    /* Initialize IO ports and peripherals */
+    CLOCK_Initialize();
     init_usb();
     init_cdc();
-    dprintf("USB initialized\r\n");
-    init_uc1601c();
-    clear_lcd(0x0);
-    point_lcd(1, 0, 0);
 
-    /*  //  init_usb();
-        #define debug
+    INTCON2bits.ALTIVT=0;
+    INTCON1bits.NSTDIS=0;
+    SRbits.IPL = 0; 
+  //  init_uc1601c();
+  //  clear_lcd(0x0);
+  //  point_lcd(1, 0, 0);
+
+/*        #define debug
   #if defined debug
       cal.ac1=408;
       cal.ac2=-72;
@@ -108,9 +112,10 @@ int16_t main(void){
   #endif
       //   read_sensor_and_compute(&cal);
      */
-    /* TODO <INSERT USER APPLICATION CODE HERE> */
-
-    while(1) {
-        poll_usb();
+    while(1){
+        if (t==1000){
+            dprintf("USB test\r\n");
+            t=0;
+        } else t++;
     }
 }

@@ -73,7 +73,7 @@ void process_cdc_request(USB_SETUP_t* usb_setup){
     }
 }
 
-void send_cdc_buf(uint8_t* buf, uint8_t len) {
+void send_cdc_buf(uint8_t* buf, uint8_t len){
     put_fifo(buf, len);
 }
 
